@@ -4,6 +4,7 @@ import 'package:google_mlkit_barcode_scanning/google_mlkit_barcode_scanning.dart
 
 import 'detector_view.dart';
 import 'painters/barcode_detector_painter.dart';
+import 'services/service.dart';
 
 class BarcodeScannerView extends StatefulWidget {
   @override
@@ -44,7 +45,7 @@ class _BarcodeScannerViewState extends State<BarcodeScannerView> {
     setState(() {
       _text = '';
     });
-    final barcodes = await _barcodeScanner.processImage(inputImage);
+    var barcodes = await _barcodeScanner.processImage(inputImage);
     if (inputImage.metadata?.size != null &&
         inputImage.metadata?.rotation != null) {
       final painter = BarcodeDetectorPainter(
@@ -54,14 +55,17 @@ class _BarcodeScannerViewState extends State<BarcodeScannerView> {
         _cameraLensDirection,
       );
       _customPaint = CustomPaint(painter: painter);
-    } else {
-      String text = 'Barcodes found: ${barcodes.length}\n\n';
+    }
+    if (barcodes.isNotEmpty) {
       for (final barcode in barcodes) {
-        text += 'Barcode: ${barcode.rawValue}\n\n';
+        if (barcode.displayValue != null && barcode.displayValue!.length > 20) {
+          var ans = extractDocument('CC', barcode.displayValue!);
+          if (ans.number > BigInt.zero) {
+            barcodes = <Barcode>[];
+          }
+        }
       }
-      _text = text;
-      // TODO: set _customPaint to draw boundingRect on top of image
-      _customPaint = null;
+      _text = '';
     }
     _isBusy = false;
     if (mounted) {
